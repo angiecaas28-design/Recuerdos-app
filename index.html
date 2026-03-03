@@ -45,13 +45,37 @@ button:hover{
 
 .card{
   background:white;
-  padding:10px;
+  padding:5px;
   border-radius:15px;
   box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  cursor:pointer;
+  transition: transform 0.2s;
+}
+
+.card:hover{
+  transform: scale(1.05);
 }
 
 .card img{
   width:100%;
+  border-radius:10px;
+  object-fit: cover;
+}
+
+/* Modal para ver imagen grande */
+#modal{
+  display:none;
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.8);
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+}
+
+#modal img{
+  max-width:90%;
+  max-height:90%;
   border-radius:10px;
 }
 
@@ -79,8 +103,13 @@ button:hover{
   <div id="galeria"></div>
 </div>
 
+<!-- Modal para imagen grande -->
+<div id="modal" onclick="cerrarModal()">
+  <img id="imagenModal" src="">
+</div>
+
 <script>
-const CONTRASEÑA = "amor2025"; // puedes cambiarla
+const CONTRASEÑA = "AMOR2025";
 
 function verificar(){
   const pass = document.getElementById("password").value;
@@ -94,7 +123,6 @@ function verificar(){
 
 // CONTADOR
 const fechaInicio = new Date("2025-02-28");
-
 function actualizarContador(){
   const hoy = new Date();
   const diff = hoy - fechaInicio;
@@ -105,7 +133,6 @@ function actualizarContador(){
   document.getElementById("contador").innerText =
     `Juntos ${meses} meses y ${dias} días 💕`;
 }
-
 setInterval(actualizarContador,1000);
 actualizarContador();
 
@@ -143,6 +170,7 @@ async function guardarRecuerdo(){
   cargarRecuerdos();
 }
 
+// Cargar recuerdos en galería
 async function cargarRecuerdos(){
   const { data } = await supabaseClient
     .from("recuerdos")
@@ -153,13 +181,21 @@ async function cargarRecuerdos(){
   galeria.innerHTML="";
 
   data.forEach(r=>{
-    galeria.innerHTML += `
-      <div class="card">
-        <img src="${r.imagen}">
-        <p>${r.mensaje}</p>
-      </div>
-    `;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<img src="${r.imagen}" alt="${r.mensaje}"><p>${r.mensaje}</p>`;
+    card.onclick = ()=> abrirModal(r.imagen);
+    galeria.appendChild(card);
   });
+}
+
+// Modal funciones
+function abrirModal(src){
+  document.getElementById("imagenModal").src = src;
+  document.getElementById("modal").style.display="flex";
+}
+function cerrarModal(){
+  document.getElementById("modal").style.display="none";
 }
 
 cargarRecuerdos();
@@ -167,3 +203,4 @@ cargarRecuerdos();
 
 </body>
 </html>
+
