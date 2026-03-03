@@ -6,6 +6,7 @@
 <title>Nuestros Recuerdos 💕</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.6.2/dist/heic2any.min.js"></script>
 
 <style>
 body{
@@ -115,7 +116,7 @@ button:hover{
   <h2>💕 Nuestros Recuerdos 💕</h2>
   <h3 id="contador"></h3>
 
-  <input type="file" id="foto" accept=".jpg,.jpeg,.png">
+  <input type="file" id="foto" accept=".jpg,.jpeg,.png,.heic">
   <input type="text" id="mensaje" placeholder="Escribe algo bonito...">
   <button onclick="guardarRecuerdo()">Guardar Recuerdo</button>
 
@@ -157,9 +158,9 @@ const SUPABASE_URL = "https://dsorebgngxinberagixf.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb3JlYmduZ3hpbmJlcmFnaXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDY0NjEsImV4cCI6MjA4ODEyMjQ2MX0.WRuj1_f5eorGTUVeUIQebzkY1UgLJu0gYYDwOYD1Hug";
 const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-// Guardar recuerdo
+// Guardar recuerdo con soporte HEIC
 async function guardarRecuerdo(){
-  const file = document.getElementById("foto").files[0];
+  let file = document.getElementById("foto").files[0];
   const texto = document.getElementById("mensaje").value;
 
   if(!file || !texto){
@@ -167,18 +168,23 @@ async function guardarRecuerdo(){
     return;
   }
 
-  // Validar tipo de archivo móvil
+  // Convertir HEIC a JPEG si es iPhone
+  if(file.type === "image/heic"){
+    file = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+  }
+
+  // Validar tipo de archivo
   const allowedTypes = ["image/jpeg","image/jpg","image/png"];
   if(!allowedTypes.includes(file.type)){
-    alert("Solo se permiten imágenes JPG o PNG 💖");
+    alert("Solo se permiten imágenes JPG, PNG 💖");
     return;
   }
 
-  // Nombres de archivo seguros
-  const safeFileName = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\.-]/g, "");
+  // Nombre seguro
+  const safeFileName = file.name ? file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\.-]/g, "") : "imagen.jpg";
   const nombreArchivo = Date.now() + "_" + safeFileName;
 
-  // Subir imagen al bucket
+  // Subir imagen
   const { error: uploadError } = await supabaseClient.storage
     .from("imagenes")
     .upload(nombreArchivo, file);
@@ -212,7 +218,7 @@ async function guardarRecuerdo(){
   mostrarRecuerdo(nuevoRecuerdo[0]);
 }
 
-// Mostrar recuerdo en galería
+// Mostrar recuerdo
 function mostrarRecuerdo(r){
   const galeria = document.getElementById("galeria");
   if(document.getElementById(`recuerdo-${r.id}`)) return;
@@ -265,7 +271,7 @@ function cerrarModal(){
   document.getElementById("modal").style.display="none";
 }
 
-// SUSCRIPCIÓN TIEMPO REAL
+// Suscripción tiempo real
 supabaseClient
   .channel('recuerdos_channel')
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recuerdos' }, (payload) => {
