@@ -167,7 +167,7 @@ async function guardarRecuerdo(){
     return;
   }
 
-  // Reemplaza espacios y caracteres raros
+  // Nombres de archivo seguros
   const safeFileName = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\.-]/g, "");
   const nombreArchivo = Date.now() + "_" + safeFileName;
 
@@ -181,13 +181,14 @@ async function guardarRecuerdo(){
     return;
   }
 
+  // Obtener URL pública correcta
   const { data } = supabaseClient.storage
     .from("imagenes")
     .getPublicUrl(nombreArchivo);
 
   const urlImagen = data.publicUrl;
 
-  // Guardar en tabla
+  // Guardar en tabla recuerdos
   const { data: nuevoRecuerdo, error: insertError } = await supabaseClient
     .from("recuerdos")
     .insert([{ mensaje:texto, imagen:urlImagen }])
@@ -204,7 +205,7 @@ async function guardarRecuerdo(){
   mostrarRecuerdo(nuevoRecuerdo[0]);
 }
 
-// Mostrar recuerdo
+// Mostrar recuerdo en galería
 function mostrarRecuerdo(r){
   const galeria = document.getElementById("galeria");
   if(document.getElementById(`recuerdo-${r.id}`)) return;
@@ -274,6 +275,7 @@ cargarRecuerdos();
 
 </body>
 </html>
+
 
 
 
