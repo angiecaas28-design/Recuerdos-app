@@ -3,60 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Recuerdos de Nosotras 💖</title>
-<link rel="manifest" href="manifest.json">
+<title>Nuestros Recuerdos 💕</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <style>
 body{
   margin:0;
-  background:#ffc0cb;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  font-family:Arial;
-}
-
-.app{
-  width:360px;
-  height:640px;
-  background:white;
-  border-radius:30px;
-  padding:20px;
-  box-shadow:0 0 30px rgba(0,0,0,0.2);
-  overflow:auto;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#ffdde1,#ee9ca7);
   text-align:center;
 }
 
-button{
-  padding:10px 20px;
-  background:#ff69b4;
+.container{
+  padding:20px;
+}
+
+input,button{
+  padding:10px;
+  margin:5px;
+  border-radius:10px;
   border:none;
+}
+
+button{
+  background:#ff4d6d;
   color:white;
-  border-radius:20px;
-  margin-top:10px;
   cursor:pointer;
 }
 
-input, textarea{
-  width:100%;
-  margin-top:8px;
-  padding:8px;
-  border-radius:10px;
-  border:1px solid #ccc;
+button:hover{
+  background:#ff1e4d;
 }
 
-.galeria{
+#galeria{
   display:grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap:12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap:15px;
   margin-top:20px;
 }
 
 .card{
-  background:#ffe4ec;
-  padding:8px;
+  background:white;
+  padding:10px;
   border-radius:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
 .card img{
@@ -64,117 +55,114 @@ input, textarea{
   border-radius:10px;
 }
 
-.card p{
-  font-size:12px;
-  margin-top:5px;
-}
-
-.contador{
-  background:#ffe4ec;
-  padding:10px;
-  border-radius:15px;
-  margin-bottom:15px;
-  font-weight:bold;
+#app{
+  display:none;
 }
 </style>
 </head>
-
 <body>
 
-<div class="app" id="loginScreen">
-  <h2>🔒 Nuestra App Secreta 💕</h2>
-  <input type="password" id="passwordInput" placeholder="Ingresa la contraseña">
-  <button onclick="verificarPassword()">Entrar 💖</button>
+<div id="login" class="container">
+  <h2>Bienvenida a nuestro mundo 💖</h2>
+  <input type="password" id="password" placeholder="Contraseña">
+  <button onclick="verificar()">Entrar</button>
 </div>
 
-<div class="app" id="appScreen" style="display:none;">
-  <h2>🐻 Nuestro Amor 🐻</h2>
+<div id="app" class="container">
+  <h2>💕 Nuestros Recuerdos 💕</h2>
+  <h3 id="contador"></h3>
 
-  <div class="contador" id="contador"></div>
+  <input type="file" id="foto">
+  <input type="text" id="mensaje" placeholder="Escribe algo bonito...">
+  <button onclick="guardarRecuerdo()">Guardar Recuerdo</button>
 
-  <h3>Agregar Recuerdo 💕</h3>
-  <input type="file" id="fotoInput">
-  <textarea id="mensajeInput" placeholder="Escribe algo bonito sobre este recuerdo..."></textarea>
-  <button onclick="guardarRecuerdo()">Guardar Recuerdo 💗</button>
-
-  <div class="galeria" id="galeria"></div>
+  <div id="galeria"></div>
 </div>
 
 <script>
-const passwordCorrecta = "TE AMITO";
-const fechaAniversario = new Date("2025-02-28");
+const CONTRASEÑA = "amor2025"; // puedes cambiarla
 
-function verificarPassword(){
-  const input = document.getElementById("passwordInput").value;
-  if(input === passwordCorrecta){
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("appScreen").style.display = "block";
-    cargarRecuerdos();
-    actualizarContador();
-  } else {
+function verificar(){
+  const pass = document.getElementById("password").value;
+  if(pass === CONTRASEÑA){
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+  }else{
     alert("Contraseña incorrecta 💔");
   }
 }
 
+// CONTADOR
+const fechaInicio = new Date("2025-02-28");
+
 function actualizarContador(){
   const hoy = new Date();
-  const diferencia = hoy - fechaAniversario;
-  const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-  document.getElementById("contador").innerHTML =
-    "💖 Llevamos " + dias + " días juntos desde el 28/02/2025 💕";
+  const diff = hoy - fechaInicio;
+
+  const dias = Math.floor(diff/(1000*60*60*24));
+  const meses = Math.floor(dias/30);
+
+  document.getElementById("contador").innerText =
+    `Juntos ${meses} meses y ${dias} días 💕`;
 }
 
-function guardarRecuerdo(){
-  const file = document.getElementById("fotoInput").files[0];
-  const mensaje = document.getElementById("mensajeInput").value;
+setInterval(actualizarContador,1000);
+actualizarContador();
 
-  if(!file){
-    alert("Selecciona una foto 💕");
+// SUPABASE
+const SUPABASE_URL = "https://dsorebgngxinberagixf.supabase.co";
+const SUPABASE_KEY = "TU_ANON_KEY_AQUI"; // reemplaza con tu key pública
+const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+async function guardarRecuerdo(){
+  const file = document.getElementById("foto").files[0];
+  const texto = document.getElementById("mensaje").value;
+
+  if(!file || !texto){
+    alert("Agrega foto y mensaje 💕");
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = function(){
-    let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
-    recuerdos.push({
-      imagen: reader.result,
-      texto: mensaje
-    });
+  const nombreArchivo = Date.now()+"_"+file.name;
 
-    localStorage.setItem("recuerdos", JSON.stringify(recuerdos));
-    cargarRecuerdos();
+  await supabaseClient.storage
+    .from("imagenes")
+    .upload(nombreArchivo,file);
 
-    document.getElementById("fotoInput").value = "";
-    document.getElementById("mensajeInput").value = "";
-  }
-  reader.readAsDataURL(file);
+  const { data } = supabaseClient.storage
+    .from("imagenes")
+    .getPublicUrl(nombreArchivo);
+
+  await supabaseClient
+    .from("recuerdos")
+    .insert([{ mensaje:texto, imagen:data.publicUrl }]);
+
+  document.getElementById("mensaje").value="";
+  document.getElementById("foto").value="";
+
+  cargarRecuerdos();
 }
 
-function cargarRecuerdos(){
+async function cargarRecuerdos(){
+  const { data } = await supabaseClient
+    .from("recuerdos")
+    .select("*")
+    .order("created_at",{ascending:false});
+
   const galeria = document.getElementById("galeria");
-  galeria.innerHTML = "";
+  galeria.innerHTML="";
 
-  let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
-
-  recuerdos.forEach(recuerdo=>{
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const img = document.createElement("img");
-    img.src = recuerdo.imagen;
-
-    const texto = document.createElement("p");
-    texto.textContent = recuerdo.texto;
-
-    card.appendChild(img);
-    card.appendChild(texto);
-    galeria.appendChild(card);
+  data.forEach(r=>{
+    galeria.innerHTML += `
+      <div class="card">
+        <img src="${r.imagen}">
+        <p>${r.mensaje}</p>
+      </div>
+    `;
   });
 }
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
+cargarRecuerdos();
 </script>
 
 </body>
