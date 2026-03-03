@@ -167,11 +167,10 @@ async function guardarRecuerdo(){
     return;
   }
 
-  // Nombres de archivo seguros
   const safeFileName = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\.-]/g, "");
   const nombreArchivo = Date.now() + "_" + safeFileName;
 
-  // Subir imagen
+  // Subir imagen al bucket
   const { error: uploadError } = await supabaseClient.storage
     .from("imagenes")
     .upload(nombreArchivo,file);
@@ -181,7 +180,7 @@ async function guardarRecuerdo(){
     return;
   }
 
-  // Obtener URL pública correcta
+  // Obtener URL pública
   const { data } = supabaseClient.storage
     .from("imagenes")
     .getPublicUrl(nombreArchivo);
@@ -275,9 +274,6 @@ cargarRecuerdos();
 
 </body>
 </html>
-
-
-
 
 
 
