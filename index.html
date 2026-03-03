@@ -1,59 +1,158 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Recuerdos de Nosotras 💖</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuerdos de Nosotras 💖</title>
+<link rel="manifest" href="manifest.json">
+
+<style>
+body{
+  margin:0;
+  background:#ffc0cb;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  font-family:Arial;
+}
+
+.app{
+  width:360px;
+  height:640px;
+  background:white;
+  border-radius:30px;
+  padding:20px;
+  box-shadow:0 0 30px rgba(0,0,0,0.2);
+  overflow:auto;
+  text-align:center;
+}
+
+button{
+  padding:10px 20px;
+  background:#ff69b4;
+  border:none;
+  color:white;
+  border-radius:20px;
+  margin-top:10px;
+}
+
+.galeria{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:10px;
+  margin-top:20px;
+}
+
+.galeria img{
+  width:100%;
+  border-radius:15px;
+}
+
+.contador{
+  background:#ffe4ec;
+  padding:10px;
+  border-radius:15px;
+  margin-top:15px;
+  font-weight:bold;
+}
+</style>
 </head>
 
-<body style="margin:0; background:#ffc0cb; display:flex; justify-content:center; align-items:center; height:100vh; font-family:Arial;">
+<body>
 
-  <div style="width:360px; height:640px; background:white; border-radius:30px; padding:20px; box-shadow:0 0 30px rgba(0,0,0,0.2); text-align:center; overflow:auto;">
-    
-    <h1>🐻 Nuestro Amor 🐻</h1>
-    <p>Un espacio con nuestros recuerdos 💕</p>
+<div class="app" id="loginScreen">
+  <h2>🔒 Nuestra App Secreta 💕</h2>
+  <input type="password" id="passwordInput" placeholder="Ingresa la contraseña">
+  <br>
+  <button onclick="verificarPassword()">Entrar 💖</button>
+</div>
 
-    <input type="file" id="fotoInput">
-    <br><br>
-    <img id="preview" width="200">
+<div class="app" id="appScreen" style="display:none;">
+  <h2>🐻 Nuestro Amor 🐻</h2>
 
-    <br><br>
-    <button onclick="guardarRecuerdo()" style="padding:10px 20px; background:#ff69b4; border:none; color:white; border-radius:20px;">
-      Guardar Recuerdo 💗
-    </button>
+  <div class="contador" id="contador"></div>
 
-  </div>
+  <p>Sube un recuerdo hermoso 💕</p>
 
-  <script>
-    const input = document.getElementById("fotoInput");
-    const preview = document.getElementById("preview");
+  <input type="file" id="fotoInput" multiple>
+  <br>
+  <button onclick="guardarRecuerdos()">Guardar Recuerdos 💗</button>
 
-    input.addEventListener("change", function() {
-      const file = this.files[0];
-      const reader = new FileReader();
-      reader.onload = function() {
-        preview.src = reader.result;
-      }
-      reader.readAsDataURL(file);
-    });
+  <div class="galeria" id="galeria"></div>
+</div>
 
-    function guardarRecuerdo() {
-      localStorage.setItem("fotoGuardada", preview.src);
-      alert("Recuerdo guardado 💖");
+<script>
+const passwordCorrecta = "TE AMITO"; // Cambia si quieres
+const fechaAniversario = new Date("2025-02-28");
+
+function verificarPassword(){
+  const input = document.getElementById("passwordInput").value;
+  if(input === passwordCorrecta){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("appScreen").style.display = "block";
+    cargarRecuerdos();
+    actualizarContador();
+  } else {
+    alert("Contraseña incorrecta 💔");
+  }
+}
+
+function actualizarContador(){
+  const hoy = new Date();
+  const diferencia = hoy - fechaAniversario;
+  const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+
+  const contador = document.getElementById("contador");
+
+  if(hoy.getDate() === 28 && hoy.getMonth() === 1){
+    contador.innerHTML = "🎉 ¡Feliz Aniversario mi amor! 💖🐻";
+  } else {
+    contador.innerHTML = "💖 Llevamos " + dias + " días juntos 💕";
+  }
+}
+
+function guardarRecuerdos(){
+  const input = document.getElementById("fotoInput");
+  const files = input.files;
+
+  if(files.length === 0){
+    alert("Selecciona al menos una foto 💕");
+    return;
+  }
+
+  let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
+
+  Array.from(files).forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = function(){
+      recuerdos.push(reader.result);
+      localStorage.setItem("recuerdos", JSON.stringify(recuerdos));
+      cargarRecuerdos();
     }
+    reader.readAsDataURL(file);
+  });
 
-    window.onload = function() {
-      const guardada = localStorage.getItem("fotoGuardada");
-      if (guardada) {
-        preview.src = guardada;
-      }
-    }
+  input.value = "";
+}
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
-    }
-  </script>
+function cargarRecuerdos(){
+  const galeria = document.getElementById("galeria");
+  galeria.innerHTML = "";
+
+  let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
+
+  recuerdos.forEach(foto=>{
+    const img = document.createElement("img");
+    img.src = foto;
+    galeria.appendChild(img);
+  });
+}
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
 
 </body>
 </html>
