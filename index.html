@@ -36,7 +36,6 @@ button:hover{
   background:#ff1e4d;
 }
 
-/* GALERÍA ESTILO ALBÚM */
 #galeria{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -83,7 +82,6 @@ button:hover{
   cursor:pointer;
 }
 
-/* Modal para imagen grande */
 #modal{
   display:none;
   position:fixed;
@@ -124,7 +122,6 @@ button:hover{
   <div id="galeria"></div>
 </div>
 
-<!-- Modal para imagen grande -->
 <div id="modal" onclick="cerrarModal()">
   <img id="imagenModal" src="">
 </div>
@@ -147,10 +144,8 @@ const fechaInicio = new Date("2025-02-28");
 function actualizarContador(){
   const hoy = new Date();
   const diff = hoy - fechaInicio;
-
   const dias = Math.floor(diff/(1000*60*60*24));
   const meses = Math.floor(dias/30);
-
   document.getElementById("contador").innerText =
     `Juntos ${meses} meses y ${dias} días 💕`;
 }
@@ -175,45 +170,53 @@ async function guardarRecuerdo(){
   const nombreArchivo = Date.now()+"_"+file.name;
 
   // Subir imagen
-  await supabaseClient.storage
+  const { error: uploadError } = await supabaseClient.storage
     .from("imagenes")
     .upload(nombreArchivo,file);
+
+  if(uploadError){
+    alert("Error al subir la imagen: " + uploadError.message);
+    return;
+  }
 
   const { data } = supabaseClient.storage
     .from("imagenes")
     .getPublicUrl(nombreArchivo);
 
-  // Guardar en tabla
-  const { data: nuevoRecuerdo } = await supabaseClient
-    .from("recuerdos")
-    .insert([{ mensaje:texto, imagen:data.publicUrl }])
-    .select(); // obtenemos el registro recién insertado
+  const urlImagen = data.publicUrl; // URL pública correcta
 
-  // Limpiar inputs
+  // Guardar en tabla
+  const { data: nuevoRecuerdo, error: insertError } = await supabaseClient
+    .from("recuerdos")
+    .insert([{ mensaje:texto, imagen:urlImagen }])
+    .select();
+
+  if(insertError){
+    alert("Error al guardar el recuerdo: " + insertError.message);
+    return;
+  }
+
   document.getElementById("mensaje").value="";
   document.getElementById("foto").value="";
 
-  // Mostrar inmediatamente en este dispositivo
   mostrarRecuerdo(nuevoRecuerdo[0]);
 }
 
-// Mostrar un solo recuerdo
+// Mostrar recuerdo
 function mostrarRecuerdo(r){
   const galeria = document.getElementById("galeria");
-
-  // Evitar duplicados
   if(document.getElementById(`recuerdo-${r.id}`)) return;
 
   const card = document.createElement("div");
   card.className = "card";
-  card.id = `recuerdo-${r.id}`; 
+  card.id = `recuerdo-${r.id}`;
   card.innerHTML = `
     <img src="${r.imagen}" alt="${r.mensaje}">
     <p>${r.mensaje}</p>
     <button class="delete-btn" onclick="eliminarRecuerdo(${r.id}, '${r.imagen}')">×</button>
   `;
   card.onclick = (e)=>{
-    if(e.target.classList.contains('delete-btn')) return; // no abrir modal si se clickea eliminar
+    if(e.target.classList.contains('delete-btn')) return;
     abrirModal(r.imagen);
   }
   galeria.prepend(card);
@@ -224,40 +227,26 @@ async function eliminarRecuerdo(id, imagen){
   const confirmar = confirm("¿Seguro que quieres eliminar este recuerdo? 💔");
   if(!confirmar) return;
 
-  // Borrar registro de Supabase
-  await supabaseClient
-    .from("recuerdos")
-    .delete()
-    .eq("id", id);
+  await supabaseClient.from("recuerdos").delete().eq("id", id);
 
-  // Borrar imagen del storage
   const nombreArchivo = imagen.split("/").pop();
-  await supabaseClient
-    .storage
-    .from("imagenes")
-    .remove([nombreArchivo]);
+  await supabaseClient.storage.from("imagenes").remove([nombreArchivo]);
 
-  // Borrar de la galería
   const card = document.getElementById(`recuerdo-${id}`);
   if(card) card.remove();
 }
 
-// Cargar todos los recuerdos al iniciar
+// Cargar recuerdos al iniciar
 async function cargarRecuerdos(){
-  const { data } = await supabaseClient
-    .from("recuerdos")
+  const { data } = await supabaseClient.from("recuerdos")
     .select("*")
     .order("created_at",{ascending:false});
-
   const galeria = document.getElementById("galeria");
   galeria.innerHTML="";
-
-  data.forEach(r=>{
-    mostrarRecuerdo(r);
-  });
+  data.forEach(r=> mostrarRecuerdo(r));
 }
 
-// Modal funciones
+// Modal
 function abrirModal(src){
   document.getElementById("imagenModal").src = src;
   document.getElementById("modal").style.display="flex";
@@ -266,7 +255,7 @@ function cerrarModal(){
   document.getElementById("modal").style.display="none";
 }
 
-// SUSCRIPCIÓN EN TIEMPO REAL
+// SUSCRIPCIÓN TIEMPO REAL
 supabaseClient
   .channel('recuerdos_channel')
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recuerdos' }, (payload) => {
@@ -283,6 +272,7 @@ cargarRecuerdos();
 
 </body>
 </html>
+
 
 
 
