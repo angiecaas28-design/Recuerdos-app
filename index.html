@@ -147,6 +147,7 @@ const SUPABASE_URL = "https://dsorebgngxinberagixf.supabase.co";
 const SUPABASE_KEY = "TU_ANON_KEY_AQUI"; // reemplaza con tu key pública
 const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+// Guardar recuerdo
 async function guardarRecuerdo(){
   const file = document.getElementById("foto").files[0];
   const texto = document.getElementById("mensaje").value;
@@ -158,6 +159,7 @@ async function guardarRecuerdo(){
 
   const nombreArchivo = Date.now()+"_"+file.name;
 
+  // Subir imagen
   await supabaseClient.storage
     .from("imagenes")
     .upload(nombreArchivo,file);
@@ -166,17 +168,31 @@ async function guardarRecuerdo(){
     .from("imagenes")
     .getPublicUrl(nombreArchivo);
 
-  await supabaseClient
+  // Guardar en tabla
+  const { data: nuevoRecuerdo } = await supabaseClient
     .from("recuerdos")
-    .insert([{ mensaje:texto, imagen:data.publicUrl }]);
+    .insert([{ mensaje:texto, imagen:data.publicUrl }])
+    .select(); // obtenemos el registro recién insertado
 
+  // Limpiar inputs
   document.getElementById("mensaje").value="";
   document.getElementById("foto").value="";
 
-  cargarRecuerdos();
+  // Mostrar inmediatamente el nuevo recuerdo en la galería
+  mostrarRecuerdo(nuevoRecuerdo[0]);
 }
 
-// Cargar recuerdos en galería
+// Mostrar un solo recuerdo en la galería
+function mostrarRecuerdo(r){
+  const galeria = document.getElementById("galeria");
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `<img src="${r.imagen}" alt="${r.mensaje}"><p>${r.mensaje}</p>`;
+  card.onclick = ()=> abrirModal(r.imagen);
+  galeria.prepend(card); // lo pone primero en la galería
+}
+
+// Cargar todos los recuerdos
 async function cargarRecuerdos(){
   const { data } = await supabaseClient
     .from("recuerdos")
@@ -187,11 +203,7 @@ async function cargarRecuerdos(){
   galeria.innerHTML="";
 
   data.forEach(r=>{
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<img src="${r.imagen}" alt="${r.mensaje}"><p>${r.mensaje}</p>`;
-    card.onclick = ()=> abrirModal(r.imagen);
-    galeria.appendChild(card);
+    mostrarRecuerdo(r);
   });
 }
 
@@ -204,7 +216,7 @@ function cerrarModal(){
   document.getElementById("modal").style.display="none";
 }
 
-// AUTO REFRESH cada 5 segundos
+// AUTO REFRESH cada 5 segundos para ver los recuerdos de otros dispositivos
 setInterval(cargarRecuerdos, 5000);
 
 cargarRecuerdos();
@@ -212,5 +224,4 @@ cargarRecuerdos();
 
 </body>
 </html>
-
 
