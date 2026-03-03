@@ -115,7 +115,7 @@ button:hover{
 </div>
 
 <script>
-const CONTRASEÑA = "AMOR2025";
+const CONTRASEÑA = "amor2025";
 
 function verificar(){
   const pass = document.getElementById("password").value;
@@ -204,9 +204,13 @@ function cerrarModal(){
   document.getElementById("modal").style.display="none";
 }
 
+// AUTO REFRESH cada 5 segundos
+setInterval(cargarRecuerdos, 5000);
+
 cargarRecuerdos();
 </script>
 
 </body>
 </html>
+
 
