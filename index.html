@@ -53,6 +53,7 @@ button:hover{
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
 .card img{
@@ -66,6 +67,20 @@ button:hover{
   padding: 5px 10px;
   text-align: center;
   font-size: 14px;
+}
+
+.delete-btn{
+  position: absolute;
+  top:5px;
+  right:5px;
+  background:red;
+  color:white;
+  border:none;
+  border-radius:50%;
+  width:25px;
+  height:25px;
+  font-weight:bold;
+  cursor:pointer;
 }
 
 /* Modal para imagen grande */
@@ -144,7 +159,7 @@ actualizarContador();
 
 // SUPABASE
 const SUPABASE_URL = "https://dsorebgngxinberagixf.supabase.co";
-const SUPABASE_KEY = "TU_ANON_KEY_AQUI"; // reemplaza con tu key pública
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb3JlYmduZ3hpbmJlcmFnaXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDY0NjEsImV4cCI6MjA4ODEyMjQ2MX0.WRuj1_f5eorGTUVeUIQebzkY1UgLJu0gYYDwOYD1Hug";
 const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // Guardar recuerdo
@@ -191,10 +206,40 @@ function mostrarRecuerdo(r){
 
   const card = document.createElement("div");
   card.className = "card";
-  card.id = `recuerdo-${r.id}`; // id único
-  card.innerHTML = `<img src="${r.imagen}" alt="${r.mensaje}"><p>${r.mensaje}</p>`;
-  card.onclick = ()=> abrirModal(r.imagen);
-  galeria.prepend(card); // lo pone primero
+  card.id = `recuerdo-${r.id}`; 
+  card.innerHTML = `
+    <img src="${r.imagen}" alt="${r.mensaje}">
+    <p>${r.mensaje}</p>
+    <button class="delete-btn" onclick="eliminarRecuerdo(${r.id}, '${r.imagen}')">×</button>
+  `;
+  card.onclick = (e)=>{
+    if(e.target.classList.contains('delete-btn')) return; // no abrir modal si se clickea eliminar
+    abrirModal(r.imagen);
+  }
+  galeria.prepend(card);
+}
+
+// Eliminar recuerdo
+async function eliminarRecuerdo(id, imagen){
+  const confirmar = confirm("¿Seguro que quieres eliminar este recuerdo? 💔");
+  if(!confirmar) return;
+
+  // Borrar registro de Supabase
+  await supabaseClient
+    .from("recuerdos")
+    .delete()
+    .eq("id", id);
+
+  // Borrar imagen del storage
+  const nombreArchivo = imagen.split("/").pop();
+  await supabaseClient
+    .storage
+    .from("imagenes")
+    .remove([nombreArchivo]);
+
+  // Borrar de la galería
+  const card = document.getElementById(`recuerdo-${id}`);
+  if(card) card.remove();
 }
 
 // Cargar todos los recuerdos al iniciar
@@ -223,9 +268,13 @@ function cerrarModal(){
 
 // SUSCRIPCIÓN EN TIEMPO REAL
 supabaseClient
-  .from('recuerdos')
-  .on('INSERT', payload => {
-    mostrarRecuerdo(payload.new); // aparece en todos los dispositivos al instante
+  .channel('recuerdos_channel')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recuerdos' }, (payload) => {
+    mostrarRecuerdo(payload.new);
+  })
+  .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'recuerdos' }, (payload) => {
+    const card = document.getElementById(`recuerdo-${payload.old.id}`);
+    if(card) card.remove();
   })
   .subscribe();
 
@@ -234,5 +283,6 @@ cargarRecuerdos();
 
 </body>
 </html>
+
 
 
