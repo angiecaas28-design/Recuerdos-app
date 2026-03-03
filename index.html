@@ -178,21 +178,26 @@ async function guardarRecuerdo(){
   document.getElementById("mensaje").value="";
   document.getElementById("foto").value="";
 
-  // Mostrar inmediatamente el nuevo recuerdo en la galería
+  // Mostrar inmediatamente en este dispositivo
   mostrarRecuerdo(nuevoRecuerdo[0]);
 }
 
-// Mostrar un solo recuerdo en la galería
+// Mostrar un solo recuerdo
 function mostrarRecuerdo(r){
   const galeria = document.getElementById("galeria");
+
+  // Evitar duplicados
+  if(document.getElementById(`recuerdo-${r.id}`)) return;
+
   const card = document.createElement("div");
   card.className = "card";
+  card.id = `recuerdo-${r.id}`; // id único
   card.innerHTML = `<img src="${r.imagen}" alt="${r.mensaje}"><p>${r.mensaje}</p>`;
   card.onclick = ()=> abrirModal(r.imagen);
-  galeria.prepend(card); // lo pone primero en la galería
+  galeria.prepend(card); // lo pone primero
 }
 
-// Cargar todos los recuerdos
+// Cargar todos los recuerdos al iniciar
 async function cargarRecuerdos(){
   const { data } = await supabaseClient
     .from("recuerdos")
@@ -216,12 +221,18 @@ function cerrarModal(){
   document.getElementById("modal").style.display="none";
 }
 
-// AUTO REFRESH cada 5 segundos para ver los recuerdos de otros dispositivos
-setInterval(cargarRecuerdos, 5000);
+// SUSCRIPCIÓN EN TIEMPO REAL
+supabaseClient
+  .from('recuerdos')
+  .on('INSERT', payload => {
+    mostrarRecuerdo(payload.new); // aparece en todos los dispositivos al instante
+  })
+  .subscribe();
 
 cargarRecuerdos();
 </script>
 
 </body>
 </html>
+
 
