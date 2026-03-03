@@ -115,7 +115,7 @@ button:hover{
   <h2>💕 Nuestros Recuerdos 💕</h2>
   <h3 id="contador"></h3>
 
-  <input type="file" id="foto">
+  <input type="file" id="foto" accept=".jpg,.jpeg,.png">
   <input type="text" id="mensaje" placeholder="Escribe algo bonito...">
   <button onclick="guardarRecuerdo()">Guardar Recuerdo</button>
 
@@ -167,13 +167,21 @@ async function guardarRecuerdo(){
     return;
   }
 
+  // Validar tipo de archivo móvil
+  const allowedTypes = ["image/jpeg","image/jpg","image/png"];
+  if(!allowedTypes.includes(file.type)){
+    alert("Solo se permiten imágenes JPG o PNG 💖");
+    return;
+  }
+
+  // Nombres de archivo seguros
   const safeFileName = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\.-]/g, "");
   const nombreArchivo = Date.now() + "_" + safeFileName;
 
   // Subir imagen al bucket
   const { error: uploadError } = await supabaseClient.storage
     .from("imagenes")
-    .upload(nombreArchivo,file);
+    .upload(nombreArchivo, file);
 
   if(uploadError){
     alert("Error al subir la imagen: " + uploadError.message);
@@ -274,7 +282,6 @@ cargarRecuerdos();
 
 </body>
 </html>
-
 
 
 
