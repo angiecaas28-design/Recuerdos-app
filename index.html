@@ -6,7 +6,6 @@
 <title>Nuestros Recuerdos 💕</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script src="https://cdn.jsdelivr.net/npm/heic2any@0.6.2/dist/heic2any.min.js"></script>
 
 <style>
 body{
@@ -38,64 +37,21 @@ button:hover{
 }
 
 #galeria{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 15px;
-  margin-top: 20px;
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap:15px;
+  margin-top:20px;
 }
 
 .card{
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  overflow: hidden;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
+  background:white;
+  padding:10px;
+  border-radius:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
 .card img{
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  border-bottom: 1px solid #ddd;
-}
-
-.card p{
-  padding: 5px 10px;
-  text-align: center;
-  font-size: 14px;
-}
-
-.delete-btn{
-  position: absolute;
-  top:5px;
-  right:5px;
-  background:red;
-  color:white;
-  border:none;
-  border-radius:50%;
-  width:25px;
-  height:25px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-#modal{
-  display:none;
-  position:fixed;
-  top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.8);
-  justify-content:center;
-  align-items:center;
-  z-index:1000;
-}
-
-#modal img{
-  max-width:90%;
-  max-height:90%;
+  width:100%;
   border-radius:10px;
 }
 
@@ -116,19 +72,15 @@ button:hover{
   <h2>💕 Nuestros Recuerdos 💕</h2>
   <h3 id="contador"></h3>
 
-  <input type="file" id="foto" accept=".jpg,.jpeg,.png,.heic">
+  <input type="file" id="foto">
   <input type="text" id="mensaje" placeholder="Escribe algo bonito...">
   <button onclick="guardarRecuerdo()">Guardar Recuerdo</button>
 
   <div id="galeria"></div>
 </div>
 
-<div id="modal" onclick="cerrarModal()">
-  <img id="imagenModal" src="">
-</div>
-
 <script>
-const CONTRASEÑA = "amor2025";
+const CONTRASEÑA = "amor2025"; // puedes cambiarla
 
 function verificar(){
   const pass = document.getElementById("password").value;
@@ -142,25 +94,28 @@ function verificar(){
 
 // CONTADOR
 const fechaInicio = new Date("2025-02-28");
+
 function actualizarContador(){
   const hoy = new Date();
   const diff = hoy - fechaInicio;
+
   const dias = Math.floor(diff/(1000*60*60*24));
   const meses = Math.floor(dias/30);
+
   document.getElementById("contador").innerText =
     `Juntos ${meses} meses y ${dias} días 💕`;
 }
+
 setInterval(actualizarContador,1000);
 actualizarContador();
 
 // SUPABASE
-const SUPABASE_URL = "https://dsorebgngxinberagixf.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb3JlYmduZ3hpbmJlcmFnaXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDY0NjEsImV4cCI6MjA4ODEyMjQ2MX0.WRuj1_f5eorGTUVeUIQebzkY1UgLJu0gYYDwOYD1Hug";
+const SUPABASE_URL = "PEGA_AQUI_TU_URL";
+const SUPABASE_KEY = "PEGA_AQUI_TU_PUBLIC_KEY";
 const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-// Guardar recuerdo con soporte HEIC
 async function guardarRecuerdo(){
-  let file = document.getElementById("foto").files[0];
+  const file = document.getElementById("foto").files[0];
   const texto = document.getElementById("mensaje").value;
 
   if(!file || !texto){
@@ -168,125 +123,50 @@ async function guardarRecuerdo(){
     return;
   }
 
-  // Convertir HEIC a JPEG si es iPhone
-  if(file.type === "image/heic"){
-    file = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
-  }
+  const nombreArchivo = Date.now()+"_"+file.name;
 
-  // Validar tipo de archivo
-  const allowedTypes = ["image/jpeg","image/jpg","image/png"];
-  if(!allowedTypes.includes(file.type)){
-    alert("Solo se permiten imágenes JPG, PNG 💖");
-    return;
-  }
-
-  // Nombre seguro
-  const safeFileName = file.name ? file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\.-]/g, "") : "imagen.jpg";
-  const nombreArchivo = Date.now() + "_" + safeFileName;
-
-  // Subir imagen
-  const { error: uploadError } = await supabaseClient.storage
+  await supabaseClient.storage
     .from("imagenes")
-    .upload(nombreArchivo, file);
+    .upload(nombreArchivo,file);
 
-  if(uploadError){
-    alert("Error al subir la imagen: " + uploadError.message);
-    return;
-  }
-
-  // Obtener URL pública
   const { data } = supabaseClient.storage
     .from("imagenes")
     .getPublicUrl(nombreArchivo);
 
-  const urlImagen = data.publicUrl;
-
-  // Guardar en tabla recuerdos
-  const { data: nuevoRecuerdo, error: insertError } = await supabaseClient
+  await supabaseClient
     .from("recuerdos")
-    .insert([{ mensaje:texto, imagen:urlImagen }])
-    .select();
-
-  if(insertError){
-    alert("Error al guardar el recuerdo: " + insertError.message);
-    return;
-  }
+    .insert([{ mensaje:texto, imagen:data.publicUrl }]);
 
   document.getElementById("mensaje").value="";
   document.getElementById("foto").value="";
 
-  mostrarRecuerdo(nuevoRecuerdo[0]);
+  cargarRecuerdos();
 }
 
-// Mostrar recuerdo
-function mostrarRecuerdo(r){
-  const galeria = document.getElementById("galeria");
-  if(document.getElementById(`recuerdo-${r.id}`)) return;
-
-  const card = document.createElement("div");
-  card.className = "card";
-  card.id = `recuerdo-${r.id}`;
-  card.innerHTML = `
-    <img src="${r.imagen}" alt="${r.mensaje}">
-    <p>${r.mensaje}</p>
-    <button class="delete-btn" onclick="eliminarRecuerdo(${r.id}, '${r.imagen}')">×</button>
-  `;
-  card.onclick = (e)=>{
-    if(e.target.classList.contains('delete-btn')) return;
-    abrirModal(r.imagen);
-  }
-  galeria.prepend(card);
-}
-
-// Eliminar recuerdo
-async function eliminarRecuerdo(id, imagen){
-  const confirmar = confirm("¿Seguro que quieres eliminar este recuerdo? 💔");
-  if(!confirmar) return;
-
-  await supabaseClient.from("recuerdos").delete().eq("id", id);
-
-  const nombreArchivo = imagen.split("/").pop();
-  await supabaseClient.storage.from("imagenes").remove([nombreArchivo]);
-
-  const card = document.getElementById(`recuerdo-${id}`);
-  if(card) card.remove();
-}
-
-// Cargar recuerdos al iniciar
 async function cargarRecuerdos(){
-  const { data } = await supabaseClient.from("recuerdos")
+  const { data } = await supabaseClient
+    .from("recuerdos")
     .select("*")
     .order("created_at",{ascending:false});
+
   const galeria = document.getElementById("galeria");
   galeria.innerHTML="";
-  data.forEach(r=> mostrarRecuerdo(r));
-}
 
-// Modal
-function abrirModal(src){
-  document.getElementById("imagenModal").src = src;
-  document.getElementById("modal").style.display="flex";
+  data.forEach(r=>{
+    galeria.innerHTML += `
+      <div class="card">
+        <img src="${r.imagen}">
+        <p>${r.mensaje}</p>
+      </div>
+    `;
+  });
 }
-function cerrarModal(){
-  document.getElementById("modal").style.display="none";
-}
-
-// Suscripción tiempo real
-supabaseClient
-  .channel('recuerdos_channel')
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recuerdos' }, (payload) => {
-    mostrarRecuerdo(payload.new);
-  })
-  .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'recuerdos' }, (payload) => {
-    const card = document.getElementById(`recuerdo-${payload.old.id}`);
-    if(card) card.remove();
-  })
-  .subscribe();
 
 cargarRecuerdos();
 </script>
 
 </body>
 </html>
+
 
 
