@@ -35,25 +35,45 @@ button{
   color:white;
   border-radius:20px;
   margin-top:10px;
+  cursor:pointer;
+}
+
+input, textarea{
+  width:100%;
+  margin-top:8px;
+  padding:8px;
+  border-radius:10px;
+  border:1px solid #ccc;
 }
 
 .galeria{
   display:grid;
   grid-template-columns: repeat(2, 1fr);
-  gap:10px;
+  gap:12px;
   margin-top:20px;
 }
 
-.galeria img{
-  width:100%;
+.card{
+  background:#ffe4ec;
+  padding:8px;
   border-radius:15px;
+}
+
+.card img{
+  width:100%;
+  border-radius:10px;
+}
+
+.card p{
+  font-size:12px;
+  margin-top:5px;
 }
 
 .contador{
   background:#ffe4ec;
   padding:10px;
   border-radius:15px;
-  margin-top:15px;
+  margin-bottom:15px;
   font-weight:bold;
 }
 </style>
@@ -64,7 +84,6 @@ button{
 <div class="app" id="loginScreen">
   <h2>🔒 Nuestra App Secreta 💕</h2>
   <input type="password" id="passwordInput" placeholder="Ingresa la contraseña">
-  <br>
   <button onclick="verificarPassword()">Entrar 💖</button>
 </div>
 
@@ -73,17 +92,16 @@ button{
 
   <div class="contador" id="contador"></div>
 
-  <p>Sube un recuerdo hermoso 💕</p>
-
-  <input type="file" id="fotoInput" multiple>
-  <br>
-  <button onclick="guardarRecuerdos()">Guardar Recuerdos 💗</button>
+  <h3>Agregar Recuerdo 💕</h3>
+  <input type="file" id="fotoInput">
+  <textarea id="mensajeInput" placeholder="Escribe algo bonito sobre este recuerdo..."></textarea>
+  <button onclick="guardarRecuerdo()">Guardar Recuerdo 💗</button>
 
   <div class="galeria" id="galeria"></div>
 </div>
 
 <script>
-const passwordCorrecta = "TE AMITO"; // Cambia si quieres
+const passwordCorrecta = "TE AMITO";
 const fechaAniversario = new Date("2025-02-28");
 
 function verificarPassword(){
@@ -102,38 +120,34 @@ function actualizarContador(){
   const hoy = new Date();
   const diferencia = hoy - fechaAniversario;
   const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-
-  const contador = document.getElementById("contador");
-
-  if(hoy.getDate() === 28 && hoy.getMonth() === 1){
-    contador.innerHTML = "🎉 ¡Feliz Aniversario mi amor! 💖🐻";
-  } else {
-    contador.innerHTML = "💖 Llevamos " + dias + " días juntos 💕";
-  }
+  document.getElementById("contador").innerHTML =
+    "💖 Llevamos " + dias + " días juntos desde el 28/02/2025 💕";
 }
 
-function guardarRecuerdos(){
-  const input = document.getElementById("fotoInput");
-  const files = input.files;
+function guardarRecuerdo(){
+  const file = document.getElementById("fotoInput").files[0];
+  const mensaje = document.getElementById("mensajeInput").value;
 
-  if(files.length === 0){
-    alert("Selecciona al menos una foto 💕");
+  if(!file){
+    alert("Selecciona una foto 💕");
     return;
   }
 
-  let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
+  const reader = new FileReader();
+  reader.onload = function(){
+    let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
+    recuerdos.push({
+      imagen: reader.result,
+      texto: mensaje
+    });
 
-  Array.from(files).forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = function(){
-      recuerdos.push(reader.result);
-      localStorage.setItem("recuerdos", JSON.stringify(recuerdos));
-      cargarRecuerdos();
-    }
-    reader.readAsDataURL(file);
-  });
+    localStorage.setItem("recuerdos", JSON.stringify(recuerdos));
+    cargarRecuerdos();
 
-  input.value = "";
+    document.getElementById("fotoInput").value = "";
+    document.getElementById("mensajeInput").value = "";
+  }
+  reader.readAsDataURL(file);
 }
 
 function cargarRecuerdos(){
@@ -142,10 +156,19 @@ function cargarRecuerdos(){
 
   let recuerdos = JSON.parse(localStorage.getItem("recuerdos")) || [];
 
-  recuerdos.forEach(foto=>{
+  recuerdos.forEach(recuerdo=>{
+    const card = document.createElement("div");
+    card.className = "card";
+
     const img = document.createElement("img");
-    img.src = foto;
-    galeria.appendChild(img);
+    img.src = recuerdo.imagen;
+
+    const texto = document.createElement("p");
+    texto.textContent = recuerdo.texto;
+
+    card.appendChild(img);
+    card.appendChild(texto);
+    galeria.appendChild(card);
   });
 }
 
